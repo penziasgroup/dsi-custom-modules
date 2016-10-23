@@ -45,6 +45,13 @@ function extra_fields_field_extra_fields() {
         'type' => 'hidden',
       );
     }
+    if($type->type == 'person' || $type->type == 'research' || $type->type == 'event'){
+      $extra['node'][$type->type]['display']['back_to'] = array(
+        'label' => t('Extra field: Back to'),
+        'weight' => -4,
+        'type' => 'hidden',
+      ); 
+    }
   }
  
   return $extra;
@@ -100,6 +107,13 @@ function extra_fields_node_view($node, $view_mode, $langcode) {
       '#view_mode' => $view_mode,
     ); 
   }
+  if (($node->type == 'person' || $node->type == 'research' || $node->type == 'event') && in_array($view_mode, array('default', 'full'))) {
+      $node->content['back_to'] = array(
+      '#theme' => 'extra_fields_back_to',
+      '#node' => $node,
+      '#view_mode' => $view_mode,
+    ); 
+  }
 }
 
 /**
@@ -128,6 +142,9 @@ function extra_fields_theme($existing, $type, $theme, $path) {
     'extra_fields_add_this' => array(
       'variables' => array('node' => NULL, 'view_mode' => NULL),
     ),
+    'extra_fields_back_to' => array(
+      'variables' => array('node' => NULL, 'view_mode' => NULL),
+    ),
   );
 }
 
@@ -148,6 +165,10 @@ function theme_extra_fields_title($variables) {
         $link_title = t($node->title); 
       }
   }
+  if($node->type == 'research'){
+      $truncate = (strlen($node->title) > 53) ? substr($node->title,0,50).'...' : $node->title;
+      $link_title = l($truncate, $entity_uri['path']);
+  }
   
   $output = '<h2 class="node-title">';
   $output .= $link_title;
@@ -163,6 +184,24 @@ function theme_extra_fields_core_link($variables) {
       $output = '<div class="core-dept-url">' . l('VISIT', $url, array('attributes' => array('target'=>'_blank'))) . ' Department website </div>';
       return $output;
   }
+}
+function theme_extra_fields_back_to($variables) {
+  $node = $variables['node'];
+  $type = $node->type;
+  $link = '';
+  switch($type){
+      case 'person':
+          $link = l('Back to People', '/about/people');
+      break;
+      case 'event':
+          $link = l('Back to Community Engagement', '/community-engagement');
+      break;
+      case 'research':
+          $link = l('Back to Research Projects', '/research/research-projects');
+      break;
+  }
+  $output = '<div class="back-to-link">' . $link . '</div>';
+  return $output;
 }
 function theme_extra_fields_event_detail($variables) {
   $node = $variables['node'];
@@ -184,7 +223,7 @@ function theme_extra_fields_time_only($variables) {
 }
 function theme_extra_fields_web_url($variables) {
   $node = $variables['node'];
-
+  $view_mode = $variables['view_mode'];
   if($node->type == 'person' && !empty($node->field_website_url)){
       $url = $node->field_website_url[LANGUAGE_NONE][0]['url'];
       
@@ -195,7 +234,11 @@ function theme_extra_fields_web_url($variables) {
       }
       $lname = ' ' . $node->field_last_name[LANGUAGE_NONE][0]['value'];
       
-      $link_text = 'More about ' . $fname . $mname . $lname;
+      if($view_mode == 'default' || $view_mode == 'full'){
+        $link_text = 'VISIT ' . $fname . $mname . $lname .'\'s website';  
+      }else{
+        $link_text = 'More about ' . $fname . $mname . $lname;
+      }
       
       $output = '<div class="person-web-url">' . l($link_text, $url, array('attributes' => array('target'=>'_blank'))) . '</div>';
       
