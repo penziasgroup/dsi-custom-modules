@@ -28,6 +28,23 @@ function extra_fields_field_extra_fields() {
         'type' => 'hidden',
       ); 
     }
+    if($type->type == 'event'){
+      $extra['node'][$type->type]['display']['time_only'] = array(
+        'label' => t('Extra field: Time Only'),
+        'weight' => -4,
+        'type' => 'hidden',
+      ); 
+      $extra['node'][$type->type]['display']['event_detail'] = array(
+        'label' => t('Extra field: Link to detail'),
+        'weight' => -4,
+        'type' => 'hidden',
+      ); 
+      $extra['node'][$type->type]['display']['add_this'] = array(
+        'label' => t('Extra field: Add to Calendar'),
+        'weight' => 4,
+        'type' => 'hidden',
+      );
+    }
   }
  
   return $extra;
@@ -64,6 +81,25 @@ function extra_fields_node_view($node, $view_mode, $langcode) {
         '#view_mode' => $view_mode,
     ); 
   }
+  if($node->type == 'event'){
+    $node->content['time_only'] = array(
+        '#theme' => 'extra_fields_time_only',
+        '#node' => $node,
+        '#view_mode' => $view_mode,
+    ); 
+    $node->content['event_detail'] = array(
+        '#theme' => 'extra_fields_event_detail',
+        '#node' => $node,
+        '#view_mode' => $view_mode,
+    );
+  }
+  if ($node->type == 'event' && in_array($view_mode, array('default', 'full'))) {
+      $node->content['add_this'] = array(
+      '#theme' => 'extra_fields_add_this',
+      '#node' => $node,
+      '#view_mode' => $view_mode,
+    ); 
+  }
 }
 
 /**
@@ -81,6 +117,15 @@ function extra_fields_theme($existing, $type, $theme, $path) {
       'variables' => array('node' => NULL, 'view_mode' => NULL),
     ),   
     'extra_fields_web_url' => array(
+      'variables' => array('node' => NULL, 'view_mode' => NULL),
+    ),   
+    'extra_fields_time_only' => array(
+      'variables' => array('node' => NULL, 'view_mode' => NULL),
+    ),     
+    'extra_fields_event_detail' => array(
+      'variables' => array('node' => NULL, 'view_mode' => NULL),
+    ),
+    'extra_fields_add_this' => array(
       'variables' => array('node' => NULL, 'view_mode' => NULL),
     ),
   );
@@ -119,6 +164,24 @@ function theme_extra_fields_core_link($variables) {
       return $output;
   }
 }
+function theme_extra_fields_event_detail($variables) {
+  $node = $variables['node'];
+  $view_mode = $variables['view_mode'];
+  $entity_uri = entity_uri('node', $node);
+  $link = l('Details', $entity_uri['path']);
+  
+  $output = '<div class="link-to-event">' . $link . '</div>';
+  return $output;
+}
+function theme_extra_fields_time_only($variables) {
+  $node = $variables['node'];
+  if(!empty($node->field_event_date)){
+      $date = strtotime($node->field_event_date[LANGUAGE_NONE][0]['value']);
+      $time_only = format_date($date, 'time_only');
+      $output = '<div class="time-only">' . $time_only . '</div>';
+      return $output;
+  }
+}
 function theme_extra_fields_web_url($variables) {
   $node = $variables['node'];
 
@@ -152,6 +215,26 @@ function theme_extra_fields_title_nolink($variables) {
   $output = '<h2 class="node-title">';
   $output .= $node->title;
   $output .= '</h2>';
+  return $output;
+}
+
+function theme_extra_fields_add_this($variables) {
+  $node = $variables['node'];
+  $eventTimeRaw = strtotime($node->field_event_date[LANGUAGE_NONE][0]['value']);
+  $startDate = format_date($eventTimeRaw, $type = 'custom', $format='m/d/Y H:i');
+
+  $teaser = $node->body[LANGUAGE_NONE][0]['safe_value'];
+  $output = '<div title="" class="addeventatc" id="addeventatc1" aria-controls="addeventatc1-drop" aria-expanded="false" tabindex="0" style="visibility: visible;"> add to calendar';
+  $output .= '<span class="timezone atc_node">America/New_York</span>';
+  $output .= '<span class="title atc_node">' . $node->title . '</span>';
+  $output .= '<span class="start atc_node">' . $startDate . '</span>';
+  $output .= '<span class="description atc_node">' . $teaser. '</span>';
+  if(!empty($node->field_location)){
+    $location = $node->field_location[LANGUAGE_NONE][0]['value'];
+    $output .= '<span class="location atc_node">' . $location . '</span>';
+  }
+  $output .= '<span class="date_format atc_node">MM/DD/YYYY</span>';
+  $output .= '</div>';
   return $output;
 }
 
