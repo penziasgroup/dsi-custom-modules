@@ -265,13 +265,16 @@ function theme_extra_fields_add_this($variables) {
   $node = $variables['node'];
   $eventTimeRaw = strtotime($node->field_event_date[LANGUAGE_NONE][0]['value']);
   $startDate = format_date($eventTimeRaw, $type = 'custom', $format='m/d/Y H:i');
-
-  $teaser = $node->body[LANGUAGE_NONE][0]['safe_value'];
+  
+  
   $output = '<div title="" class="addeventatc" id="addeventatc1" aria-controls="addeventatc1-drop" aria-expanded="false" tabindex="0" style="visibility: visible;"> add to calendar';
   $output .= '<span class="timezone atc_node">America/New_York</span>';
   $output .= '<span class="title atc_node">' . $node->title . '</span>';
   $output .= '<span class="start atc_node">' . $startDate . '</span>';
-  $output .= '<span class="description atc_node">' . $teaser. '</span>';
+  if(!empty($node->body)){
+    $teaser = $node->body[LANGUAGE_NONE][0]['safe_value'];
+    $output .= '<span class="description atc_node">' . $teaser. '</span>';
+  }
   if(!empty($node->field_location)){
     $location = $node->field_location[LANGUAGE_NONE][0]['value'];
     $output .= '<span class="location atc_node">' . $location . '</span>';
